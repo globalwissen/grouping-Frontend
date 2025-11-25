@@ -1,9 +1,10 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /* Login.tsx */
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import { LogIn } from "lucide-react";
+import axios from "../config/axiosconfig";
+import { Eye, EyeOff, LogIn } from "lucide-react";
+import { isAxiosError } from "axios";
+import toast from "react-hot-toast";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -15,6 +16,7 @@ export default function Login() {
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -22,16 +24,23 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const res = await axios.post(
-        "http://localhost:5000/api/student/login",
-        form
-      );
-
-      alert("Login successful!");
+      const res = await axios.post("/students/login", form);
+      toast.success("Login successful!");
       console.log(res.data);
-      // navigate("/dashboard") // optional
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Invalid email or password");
+      localStorage.setItem("studentId", res.data.student._id);
+      setForm({
+        email: "",
+        password: "",
+      });
+      navigate("/dashboard"); // optional
+    } catch (error) {
+      if (isAxiosError(error)) {
+        const msg =
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          "An unexpected error occurred";
+        toast.error(msg);
+      }
     }
 
     setLoading(false);
@@ -52,13 +61,21 @@ export default function Login() {
             className="w-full border-2 border-[#003058] px-4 py-2"
             onChange={(e) => setForm({ ...form, email: e.target.value })}
           />
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Password"
+              className="w-full border-2 border-[#003058] px-4 py-2"
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+            />
 
-          <input
-            type="password"
-            placeholder="Password"
-            className="w-full border-2 border-[#003058] px-4 py-2"
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
-          />
+            <span
+              className="absolute right-3 top-3 cursor-pointer"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </span>
+          </div>
 
           {error && <p className="text-red-500 text-sm">{error}</p>}
 
